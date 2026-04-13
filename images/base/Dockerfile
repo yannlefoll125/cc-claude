@@ -14,4 +14,7 @@ ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /workspace
 
-ENTRYPOINT ["claude"]
+COPY cc-wrapper.sh /cc-wrapper.sh
+RUN chmod +x /cc-wrapper.sh
+
+ENTRYPOINT ["/cc-wrapper.sh"]
