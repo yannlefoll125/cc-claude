@@ -83,3 +83,18 @@ The two volume mounts are the key pieces:
 ## Configuration
 
 Claude Code permissions are configured in `.claude/settings.local.json`. Edit this file to adjust which tools and operations Claude is allowed to perform inside the container.
+
+### Git identity (optional)
+
+By default, the container has no git user identity. To set one, copy `.env.example` to `.env` and fill in your details:
+
+```bash
+cp .env.example .env
+```
+
+```ini
+GIT_USER_NAME=Your Name
+GIT_USER_EMAIL=you@example.com
+```
+
+`.env` is gitignored, so each developer maintains their own without affecting the shared config. The values are picked up by `docker-compose.yml` and applied via `git config --global` at container startup.
