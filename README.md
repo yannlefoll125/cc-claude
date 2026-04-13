@@ -11,9 +11,11 @@ Run Anthropic's [Claude Code](https://github.com/anthropics/claude-code) CLI in 
 
 ```
 .
+├── .env.example             # Template for optional git identity config
 ├── docker-compose.yml       # Compose service definitions
 └── images/
     ├── base/
+    │   ├── cc-wrapper.sh    # Entrypoint: applies git config, clears terminal, runs claude
     │   └── Dockerfile       # Debian Bookworm slim + Claude Code CLI (cc-base)
     └── vue3/
         └── Dockerfile       # cc-base + Yarn (cc-vue3)
@@ -33,7 +35,9 @@ docker-compose build
 docker-compose run cc
 ```
 
-This mounts the current directory into `/workspace` inside the container and your `~/.claude` config directory into `/root/.claude`, so your Claude settings and credentials persist across runs.
+This mounts the current directory into `/workspace` inside the container, your `~/.claude` config directory into `/root/.claude`, and `~/.claude.json` into `/root/.claude.json`, so your Claude settings and credentials persist across runs.
+
+The entrypoint (`cc-wrapper.sh`) clears the terminal before and after the session, marks `/workspace` as a git safe directory, and applies optional git identity env vars before launching `claude`.
 
 ## Images
 
@@ -45,7 +49,11 @@ This mounts the current directory into `/workspace` inside the container and you
 To use the Vue 3 image, update `docker-compose.yml` to reference `cc-vue3`, or run the container directly:
 
 ```bash
-docker run -it --rm -v "$PWD":/workspace -v ~/.claude:/root/.claude cc-vue3
+docker run -it --rm \
+  -v "$PWD":/workspace \
+  -v ~/.claude:/root/.claude \
+  -v ~/.claude.json:/root/.claude.json \
+  cc-vue3
 ```
 
 ## Using cc-base in Another Project
@@ -58,9 +66,13 @@ services:
     image: cc-base  # or cc-vue3 for Vue 3 projects
     stdin_open: true
     tty: true
+    environment:
+      GIT_USER_NAME: ${GIT_USER_NAME:-}
+      GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
     volumes:
       - .:/workspace
       - ~/.claude:/root/.claude
+      - ~/.claude.json:/root/.claude.json
 ```
 
 Then from your project root:
@@ -73,12 +85,13 @@ docker-compose -f /path/to/this/repo/docker-compose.yml build
 docker-compose run cc
 ```
 
-The two volume mounts are the key pieces:
+The volume mounts are the key pieces:
 
 | Mount | Purpose |
 |-------|---------|
 | `.:/workspace` | Makes your project files available inside the container |
 | `~/.claude:/root/.claude` | Persists your Claude credentials and settings across runs |
+| `~/.claude.json:/root/.claude.json` | Persists Claude's top-level auth/config state across runs |
 
 ## Configuration
 
