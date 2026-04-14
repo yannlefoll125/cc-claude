@@ -12,8 +12,6 @@ RUN cp -L /root/.local/bin/claude /usr/local/bin/claude
 
 #ENV PATH="/root/.local/bin:$PATH"
 
-WORKDIR /workspace
-
 COPY cc-wrapper.sh /cc-wrapper.sh
 RUN chmod +x /cc-wrapper.sh
 
