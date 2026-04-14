@@ -36,9 +36,7 @@ docker-compose build
 docker-compose run cc
 ```
 
-This mounts the current directory into `/workspace` inside the container, your `~/.claude` config directory into `/home/hostuser/.claude`, and `~/.claude.json` into `/home/hostuser/.claude.json`, so your Claude settings and credentials persist across runs.
-
-The startup runs in two phases. `cc-wrapper.sh` (root) creates a `hostuser` account matching your host UID/GID and re-execs via `gosu`. `run-as-hostuser.sh` (hostuser) then applies optional git identity env vars, marks `/workspace` as a git safe directory, clears the terminal, and runs `claude`.
+This mounts your project files, Claude credentials, and auth state into the container. See [The cc-base environment](#the-cc-base-environment) for how ownership and credentials work.
 
 ## Images
 
@@ -46,6 +44,38 @@ The startup runs in two phases. `cc-wrapper.sh` (root) creates a `hostuser` acco
 |-------|-------------|
 | `cc-base` | Debian Bookworm slim + Claude Code CLI (installed via official install script). General-purpose starting point. |
 | `cc-vue3` | Extends `cc-base` with Yarn (via corepack). Use for Vue 3 projects. |
+
+## The cc-base environment
+
+`cc-base` is a Debian Bookworm slim image with the Claude Code CLI pre-installed. It is designed to be a general-purpose starting point that other images (like `cc-vue3`) extend by adding project-specific tooling.
+
+### The `hostuser` model
+
+The defining feature of `cc-base` is that it runs Claude Code as a user whose UID and GID match yours on the host. At startup, the entrypoint reads the UID/GID of the `/workspace` mount point:
+
+```bash
+HOST_UID=$(stat -c "%u" /workspace)
+HOST_GID=$(stat -c "%g" /workspace)
+```
+
+It then creates a `hostgroup`/`hostuser` pair with those IDs and drops privileges to that user via [gosu](https://packages.debian.org/bookworm/gosu) before running `claude`. The result: any file Claude creates inside `/workspace` is owned by you on the host — no `root`-owned artifacts, no `chown` cleanup after the container exits.
+
+The same ownership logic applies to the config mounts. `~/.claude` and `~/.claude.json` are mounted into `/home/hostuser/.claude` and `/home/hostuser/.claude.json`, so credentials and settings are read and written with your UID — they stay in sync with your host login without any permission tricks.
+
+### The two-phase entrypoint
+
+Startup is split across two scripts because privilege drop requires root:
+
+| Phase | Script | Runs as | What it does |
+|-------|--------|---------|--------------|
+| 1 | `cc-wrapper.sh` | root | Reads host UID/GID from `/workspace`, creates `hostgroup`/`hostuser`, `chown`s the home dir, re-execs via `gosu hostuser` |
+| 2 | `run-as-hostuser.sh` | hostuser | Applies `GIT_USER_NAME`/`GIT_USER_EMAIL` if set, marks `/workspace` as a git safe directory, clears the terminal, runs `claude` |
+
+### Extending cc-base
+
+When building a child image, only add tooling — do not create a fixed user or set a `USER` directive. The UID match happens at runtime from the `/workspace` mount, so baking in a user would break the ownership alignment. `cc-vue3` is the canonical example: it just adds Yarn via corepack on top of `cc-base` and leaves the entrypoint untouched.
+
+---
 
 To use the Vue 3 image, update `docker-compose.yml` to reference `cc-vue3`, or run the container directly:
 
@@ -57,7 +87,7 @@ docker run -it --rm \
   cc-vue3
 ```
 
-## Using cc-claude in Another Project
+## Using cc-claude in another project
 
 The `docker-compose.yml` in this repo shows the recommended pattern for integrating `cc-base` into any project. Copy it into your project root and adjust as needed:
 
@@ -90,9 +120,9 @@ The volume mounts are the key pieces:
 
 | Mount | Purpose |
 |-------|---------|
-| `.:/workspace` | Makes your project files available inside the container |
-| `~/.claude:/home/hostuser/.claude` | Persists your Claude credentials and settings across runs |
-| `~/.claude.json:/home/hostuser/.claude.json` | Persists Claude's top-level auth/config state across runs |
+| `.:/workspace` | Makes your project files available inside the container; also the source of the host UID/GID used to create `hostuser` |
+| `~/.claude:/home/hostuser/.claude` | Persists Claude credentials and settings; mounted at the `hostuser` home path so ownership matches your host login |
+| `~/.claude.json:/home/hostuser/.claude.json` | Persists Claude's top-level auth/config state; same ownership rationale |
 
 ## Configuration
 
