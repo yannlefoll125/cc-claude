@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(cat /run-as-hostuser.sh)",
+      "Bash(cat /cc-wrapper.sh)"
     ]
   }
 }

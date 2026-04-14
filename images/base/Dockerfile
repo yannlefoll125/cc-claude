@@ -8,12 +8,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 RUN curl -fsSL https://claude.ai/install.sh | bash
+RUN cp -L /root/.local/bin/claude /usr/local/bin/claude
 
-ENV PATH="/root/.local/bin:$PATH"
+#ENV PATH="/root/.local/bin:$PATH"
 
 WORKDIR /workspace
 
 COPY cc-wrapper.sh /cc-wrapper.sh
 RUN chmod +x /cc-wrapper.sh
+
+COPY run-as-hostuser.sh /run-as-hostuser.sh
+RUN chmod +x /run-as-hostuser.sh
+
 
 ENTRYPOINT ["/cc-wrapper.sh"]

@@ -8,5 +8,5 @@ services:
       GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
     volumes:
       - .:/workspace
-      - ~/.claude:/root/.claude
-      - ~/.claude.json:/root/.claude.json
+      - ~/.claude:/home/hostuser/.claude
+      - ~/.claude.json:/home/hostuser/.claude.json
