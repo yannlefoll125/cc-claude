@@ -22,7 +22,27 @@ What this does **not** do:
 
 Think of it as a seatbelt against *cross-project* leakage and agent-mediated accidents on your own filesystem, not as a confidentiality boundary against Anthropic.
 
-## Shell completion
+## Prerequisites
+
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+## Scripts
+
+### `build.sh`
+
+Builds the `cc-*` Docker images in dependency order.
+
+```bash
+./build.sh              # build every discovered image
+./build.sh vue3         # build cc-vue3 and its transitive dependencies only
+```
+
+Images are auto-discovered from `images/*/Dockerfile`. Dependencies are inferred by scanning each Dockerfile for `FROM cc-<name>` and `COPY --from=cc-<name>` directives, then a topological sort ensures each image is built after anything it depends on. Dependency cycles are detected and reported as errors.
+
+Adding a new image is just: create `images/<name>/Dockerfile` — no edits to `build.sh` required.
+
+### Shell completion
 
 Add one line to your `~/.bashrc` (use the actual path where you cloned this repo):
 
@@ -31,11 +51,6 @@ source /path/to/cc-docker/completions/build.bash
 ```
 
 This gives `./build.sh <TAB>` completion against the live list of images. The image list is read at completion time, so adding or removing an image directory is reflected immediately — no re-sourcing needed.
-
-## Prerequisites
-
-- [Docker](https://docs.docker.com/get-docker/)
-- [Docker Compose](https://docs.docker.com/compose/install/)
 
 ## Project Structure
 
