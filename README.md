@@ -1,6 +1,26 @@
 # Claude Code Docker Environment
 
-Run Anthropic's [Claude Code](https://github.com/anthropics/claude-code) CLI in an isolated Docker container.
+Run Anthropic's [Claude Code](https://github.com/anthropics/claude-code) CLI in an isolated Docker container, one container per project.
+
+## What this is (and isn't) for
+
+The goal is **project isolation**, not network isolation from Anthropic.
+
+Claude Code is a capable agent with broad filesystem and shell access. Run directly on a developer laptop, it can in principle read anything the logged-in user can read: other repositories, SSH keys, browser profiles, shell history, `~/.aws`, other projects' `.env` files, and so on. Even with good intentions, a single misinterpreted prompt — or a prompt-injection payload hidden in a dependency, issue, or web page — can cause the agent to pull context from one project into another.
+
+Running Claude inside a per-project container fixes that. The container only sees:
+
+- `/workspace` — the current project directory
+- `/home/hostuser/.claude` and `/home/hostuser/.claude.json` — your Claude auth/settings
+
+It does **not** see other repos on your machine, your home directory, SSH keys, or any sibling project. A prompt injection inside project A cannot exfiltrate code from project B, because project B isn't mounted.
+
+What this does **not** do:
+
+- It does not prevent code from being sent to Anthropic's API. That is inherent to using Claude Code — your prompts and file contents are sent to Anthropic as part of normal operation. If you don't want code leaving your machine at all, don't run Claude Code on it.
+- It does not sandbox network access. The container can reach the internet like any other process.
+
+Think of it as a seatbelt against *cross-project* leakage and agent-mediated accidents on your own filesystem, not as a confidentiality boundary against Anthropic.
 
 ## Prerequisites
 
