@@ -22,6 +22,16 @@ What this does **not** do:
 
 Think of it as a seatbelt against *cross-project* leakage and agent-mediated accidents on your own filesystem, not as a confidentiality boundary against Anthropic.
 
+## Shell completion
+
+Add one line to your `~/.bashrc` (use the actual path where you cloned this repo):
+
+```bash
+source /path/to/cc-docker/completions/build.bash
+```
+
+This gives `./build.sh <TAB>` completion against the live list of images. The image list is read at completion time, so adding or removing an image directory is reflected immediately — no re-sourcing needed.
+
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/)

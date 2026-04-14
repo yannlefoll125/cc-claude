@@ -13,6 +13,9 @@
 # A topological sort ensures dependencies are always built before their
 # dependents. Circular dependencies are detected and reported as errors.
 #
+# Tab completion — add to ~/.bashrc:
+#   source /path/to/this/repo/completions/build.bash
+#
 # Examples:
 #   ./build.sh           # build all images
 #   ./build.sh vue3      # build cc-vue3 and its dependencies only
