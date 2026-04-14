@@ -57,14 +57,14 @@ docker run -it --rm \
   cc-vue3
 ```
 
-## Using cc-base in Another Project
+## Using cc-claude in Another Project
 
 The `docker-compose.yml` in this repo shows the recommended pattern for integrating `cc-base` into any project. Copy it into your project root and adjust as needed:
 
 ```yaml
 services:
   cc:
-    image: cc-base  # or cc-vue3 for Vue 3 projects
+    image: cc-base  # or cc-vue3 for Vue 3 projects, or any other extension of cc-base
     stdin_open: true
     tty: true
     environment:
