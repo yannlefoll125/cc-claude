@@ -2,7 +2,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-IMAGES=(base vue3)
+IMAGES=(base node20 vue3)
 
 build_one() {
   local name=$1
