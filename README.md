@@ -15,10 +15,11 @@ Run Anthropic's [Claude Code](https://github.com/anthropics/claude-code) CLI in 
 ├── docker-compose.yml       # Compose service definitions
 └── images/
     ├── base/
-    │   ├── cc-wrapper.sh    # Entrypoint: applies git config, clears terminal, runs claude
-    │   └── Dockerfile       # Debian Bookworm slim + Claude Code CLI (cc-base)
+    │   ├── cc-wrapper.sh        # Entrypoint (root phase): matches host UID/GID, re-execs via gosu
+    │   ├── run-as-hostuser.sh   # User phase: applies git config, clears terminal, runs claude
+    │   └── Dockerfile           # Debian Bookworm slim + Claude Code CLI (cc-base)
     └── vue3/
-        └── Dockerfile       # cc-base + Yarn (cc-vue3)
+        └── Dockerfile           # cc-base + Yarn (cc-vue3)
 ```
 
 ## Usage
@@ -35,9 +36,9 @@ docker-compose build
 docker-compose run cc
 ```
 
-This mounts the current directory into `/workspace` inside the container, your `~/.claude` config directory into `/root/.claude`, and `~/.claude.json` into `/root/.claude.json`, so your Claude settings and credentials persist across runs.
+This mounts the current directory into `/workspace` inside the container, your `~/.claude` config directory into `/home/hostuser/.claude`, and `~/.claude.json` into `/home/hostuser/.claude.json`, so your Claude settings and credentials persist across runs.
 
-The entrypoint (`cc-wrapper.sh`) clears the terminal before and after the session, marks `/workspace` as a git safe directory, and applies optional git identity env vars before launching `claude`.
+The startup runs in two phases. `cc-wrapper.sh` (root) creates a `hostuser` account matching your host UID/GID and re-execs via `gosu`. `run-as-hostuser.sh` (hostuser) then applies optional git identity env vars, marks `/workspace` as a git safe directory, clears the terminal, and runs `claude`.
 
 ## Images
 
@@ -51,8 +52,8 @@ To use the Vue 3 image, update `docker-compose.yml` to reference `cc-vue3`, or r
 ```bash
 docker run -it --rm \
   -v "$PWD":/workspace \
-  -v ~/.claude:/root/.claude \
-  -v ~/.claude.json:/root/.claude.json \
+  -v ~/.claude:/home/hostuser/.claude \
+  -v ~/.claude.json:/home/hostuser/.claude.json \
   cc-vue3
 ```
 
@@ -71,8 +72,8 @@ services:
       GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
     volumes:
       - .:/workspace
-      - ~/.claude:/root/.claude
-      - ~/.claude.json:/root/.claude.json
+      - ~/.claude:/home/hostuser/.claude
+      - ~/.claude.json:/home/hostuser/.claude.json
 ```
 
 Then from your project root:
@@ -90,8 +91,8 @@ The volume mounts are the key pieces:
 | Mount | Purpose |
 |-------|---------|
 | `.:/workspace` | Makes your project files available inside the container |
-| `~/.claude:/root/.claude` | Persists your Claude credentials and settings across runs |
-| `~/.claude.json:/root/.claude.json` | Persists Claude's top-level auth/config state across runs |
+| `~/.claude:/home/hostuser/.claude` | Persists your Claude credentials and settings across runs |
+| `~/.claude.json:/home/hostuser/.claude.json` | Persists Claude's top-level auth/config state across runs |
 
 ## Configuration
 
