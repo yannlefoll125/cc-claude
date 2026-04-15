@@ -1,9 +1,10 @@
 services:
   cc:
-    image: cc-base
+    hostname: cc
+    image: cc-vue3
     stdin_open: true
     tty: true
-    environment:             # Values are loaded from .env (see .env.example) — gitignored, set per developer
+    environment:
       GIT_USER_NAME: ${GIT_USER_NAME:-}
       GIT_USER_EMAIL: ${GIT_USER_EMAIL:-}
       PROJECT_DIR: ${PWD}
