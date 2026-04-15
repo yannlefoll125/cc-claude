@@ -63,8 +63,10 @@ This gives `./build.sh <TAB>` completion against the live list of images. The im
     │   ├── cc-wrapper.sh        # Entrypoint (root phase): matches host UID/GID, re-execs via gosu
     │   ├── run-as-hostuser.sh   # User phase: applies git config, clears terminal, runs claude
     │   └── Dockerfile           # Debian Bookworm slim + Claude Code CLI (cc-base)
+    ├── node20/
+    │   └── Dockerfile           # cc-base + Node.js 20 (cc-node20)
     └── vue3/
-        └── Dockerfile           # cc-base + Yarn (cc-vue3)
+        └── Dockerfile           # cc-node20 + Yarn via corepack (cc-vue3)
 ```
 
 ## Usage
@@ -88,7 +90,18 @@ This mounts your project files, Claude credentials, and auth state into the cont
 | Image | Description |
 |-------|-------------|
 | `cc-base` | Debian Bookworm slim + Claude Code CLI (installed via official install script). General-purpose starting point. |
-| `cc-vue3` | Extends `cc-base` with Yarn (via corepack). Use for Vue 3 projects. |
+| `cc-node20` | Extends `cc-base` with Node.js 20 from NodeSource. |
+| `cc-vue3` | Extends `cc-node20` with Yarn (via corepack). Use for Vue 3 projects. |
+
+### Dependency tree
+
+`build.sh` derives this chain from `FROM`/`COPY --from` directives automatically, so new images slot in without any manual configuration.
+
+```
+cc-base
+└── cc-node20
+    └── cc-vue3
+```
 
 ## The cc-base environment
 
@@ -118,7 +131,7 @@ Startup is split across two scripts because privilege drop requires root:
 
 ### Extending cc-base
 
-When building a child image, only add tooling — do not create a fixed user or set a `USER` directive. The UID match happens at runtime from the `$PROJECT_DIR` mount, so baking in a user would break the ownership alignment. `cc-vue3` is the canonical example: it just adds Yarn via corepack on top of `cc-base` and leaves the entrypoint untouched.
+When building a child image, only add tooling — do not create a fixed user or set a `USER` directive. The UID match happens at runtime from the `$PROJECT_DIR` mount, so baking in a user would break the ownership alignment. `cc-node20` and `cc-vue3` are canonical examples: `cc-node20` adds Node.js 20 on top of `cc-base`, and `cc-vue3` layers Yarn via corepack on top of `cc-node20` — neither touches the entrypoint.
 
 ---
 
