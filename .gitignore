@@ -1,3 +1,6 @@
 .idea/
-.env
 .claude/
+.env
+
+
+.cc-docker/.env

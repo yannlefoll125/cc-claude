@@ -56,8 +56,9 @@ This gives `./build.sh <TAB>` completion against the live list of images. The im
 
 ```
 .
-├── .env.example             # Template for optional git identity config
-├── docker-compose.yml       # Compose service definitions
+├── .cc-docker/
+│   ├── docker-compose.yml       # Compose service definition
+│   └── .env.example             # Template for optional git identity config
 └── images/
     ├── base/
     │   ├── cc-wrapper.sh        # Entrypoint (root phase): matches host UID/GID, re-execs via gosu
@@ -74,14 +75,16 @@ This gives `./build.sh <TAB>` completion against the live list of images. The im
 **1. Build the images:**
 
 ```bash
-docker-compose build
+docker-compose -f .cc-docker/docker-compose.yml build
 ```
 
 **2. Run Claude Code:**
 
 ```bash
-docker-compose run cc
+docker-compose -f .cc-docker/docker-compose.yml run cc
 ```
+
+Tip: set `COMPOSE_FILE=.cc-docker/docker-compose.yml` in your shell (e.g. in `.bashrc`) to drop the `-f` flag from every command.
 
 This mounts your project files, Claude credentials, and auth state into the container. See [The cc-base environment](#the-cc-base-environment) for how ownership and credentials work.
 
@@ -149,7 +152,15 @@ docker run -it --rm \
 
 ## Using cc-claude in another project
 
-The `docker-compose.yml` in this repo shows the recommended pattern for integrating `cc-base` into any project. Copy it into your project root and adjust as needed:
+The `.cc-docker/docker-compose.yml` in this repo shows the recommended pattern for integrating `cc-base` into any project. Copy the whole `.cc-docker/` directory into your project root and adjust as needed:
+
+```bash
+cp -r /path/to/cc-docker/.cc-docker /your/project/
+cp /your/project/.cc-docker/.env.example /your/project/.cc-docker/.env
+# edit .cc-docker/.env with your git identity
+```
+
+The compose file:
 
 ```yaml
 services:
@@ -172,10 +183,10 @@ Then from your project root:
 
 ```bash
 # Build cc-base first (only needed once)
-docker-compose -f /path/to/this/repo/docker-compose.yml build
+docker-compose -f /path/to/cc-docker/.cc-docker/docker-compose.yml build
 
 # Start Claude Code in your project
-docker-compose run cc
+docker-compose -f .cc-docker/docker-compose.yml run cc
 ```
 
 The volume mounts are the key pieces:
@@ -192,10 +203,10 @@ Claude Code permissions are configured in `.claude/settings.local.json`. Edit th
 
 ### Git identity (optional)
 
-By default, the container has no git user identity. To set one, copy `.env.example` to `.env` and fill in your details:
+By default, the container has no git user identity. To set one, copy `.cc-docker/.env.example` to `.cc-docker/.env` and fill in your details:
 
 ```bash
-cp .env.example .env
+cp .cc-docker/.env.example .cc-docker/.env
 ```
 
 ```ini
@@ -203,4 +214,4 @@ GIT_USER_NAME=Your Name
 GIT_USER_EMAIL=you@example.com
 ```
 
-`.env` is gitignored, so each developer maintains their own without affecting the shared config. The values are picked up by `docker-compose.yml` and applied via `git config --global` at container startup.
+`.cc-docker/.env` is gitignored, so each developer maintains their own without affecting the shared config. The values are picked up by `.cc-docker/docker-compose.yml` and applied via `git config --global` at container startup.
